@@ -676,8 +676,16 @@ function buildDetailHTML(key, label, tabData) {
 '    scales:{x:hideX?xAxHidden:xAx,y:yAx(sc)}};\n' +
 '  if(zoomEn){\n' +
 '    function showResetBtn(){document.getElementById("resetZoomBtn").classList.add("vis");}\n' +
-'    o.plugins.zoom={zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:"x",onZoom:showResetBtn},\n' +
-'      pan:{enabled:true,mode:"x",onPan:showResetBtn}};\n' +
+'    function syncZoom(src){\n' +
+'      const other=src===pxCh?hosCh:pxCh;\n' +
+'      if(!other)return;\n' +
+'      const s=src.scales.x;\n' +
+'      other.zoomScale("x",{min:s.min,max:s.max},"none");\n' +
+'    }\n' +
+'    o.plugins.zoom={zoom:{wheel:{enabled:true},pinch:{enabled:true},mode:"x",\n' +
+'      onZoom:function(ctx){showResetBtn();syncZoom(ctx.chart);}},\n' +
+'      pan:{enabled:true,mode:"x",\n' +
+'      onPan:function(ctx){showResetBtn();syncZoom(ctx.chart);}}};\n' +
 '  }\n' +
 '  return o;\n' +
 '}\n' +
