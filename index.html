@@ -475,7 +475,7 @@ function renderTabContent(tabIdx) {
       <div class="mini-grid">`;
   tab.etfs.forEach((e, i) => {
     html += `<div class="mini-card">
-        <div class="mini-title"><span class="etf-dot" style="background:${PALETTE[i%PALETTE.length]}"></span>${e.label}<button class="detail-btn" onclick="openDetail('${e.key}','${e.label}')">Detail ↗</button></div>
+        <div class="mini-title"><span class="etf-dot" style="background:${PALETTE[i%PALETTE.length]}"></span>${e.label}<button class="detail-btn" onclick="openDetail('${e.key}','${e.label}','${e.short}')">Detail ↗</button></div>
         <div class="mini-chart-wrap"><canvas id="mini-${tab.id}-${i}"></canvas></div>
       </div>`;
   });
@@ -527,7 +527,7 @@ function switchTab(idx) {
 }
 
 // ── DETAIL PAGE ───────────────────────────────────────────────────────────────
-function openDetail(key, label) {
+function buildDetailHTML(key, label) {
   const hosD = RAW.hos[key] || {dates:[], values:[]};
   const pxD  = RAW.px[key]  || {dates:[], values:[]};
   const safeData = JSON.stringify({hos: hosD, px: pxD}).replace(/<\/script>/gi, '<\\/script>');
@@ -567,18 +567,18 @@ function openDetail(key, label) {
 '<div id="hdr"><div><h1>' + label + '</h1><div class="sub">ETF Detail View</div></div>' +
 '<div class="last" id="lastUpdate"></div></div>\n' +
 '<div class="card"><div class="controls" id="ctrl">\n' +
-'<button class="btn atf" data-tf="1W">1W</button>\n' +
+'<button class="btn" data-tf="1W">1W</button>\n' +
 '<button class="btn" data-tf="1M">1M</button>\n' +
 '<button class="btn" data-tf="3M">3M</button>\n' +
 '<button class="btn" data-tf="6M">6M</button>\n' +
-'<button class="btn" data-tf="YTD">YTD</button>\n' +
+'<button class="btn atf" data-tf="YTD">YTD</button>\n' +
 '<button class="btn" data-tf="1Y">1Y</button>\n' +
 '<button class="btn" data-tf="3Y">3Y</button>\n' +
 '<button class="btn" data-tf="7Y">7Y</button>\n' +
 '<button class="btn" data-tf="MAX">MAX</button>\n' +
 '<div class="sep"></div>\n' +
-'<button class="btn asc" data-sc="Units">Units</button>\n' +
-'<button class="btn" data-sc="Rebase">Rebase</button>\n' +
+'<button class="btn" data-sc="Units">Units</button>\n' +
+'<button class="btn asc" data-sc="Rebase">Rebase</button>\n' +
 '</div></div>\n' +
 '<div class="card chart-card">\n' +
 '<div class="panel-section"><div class="panel-label">Price</div><div class="chart-box"><canvas id="pxC"></canvas></div></div>\n' +
@@ -587,7 +587,7 @@ function openDetail(key, label) {
 '</div>\n' +
 '<script>\n' +
 'const D=' + safeData + ';\n' +
-'let tf="1W",sc="Units",pxCh,hosCh;\n' +
+'let tf="YTD",sc="Rebase",pxCh,hosCh;\n' +
 'function filterTF(dates,vals,tf){\n' +
 '  if(!dates.length)return{dates:[],values:[]};\n' +
 '  const ref=new Date(dates[dates.length-1]);let cut;\n' +
@@ -678,9 +678,11 @@ function openDetail(key, label) {
 '<' + '/script>\n' +
 '</body></html>';
 
-  const blob = new Blob([pageHtml], {type:'text/html'});
-  const url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
+  return pageHtml;
+}
+
+function openDetail(key, label) {
+  window.open('?chart=' + encodeURIComponent(key), '_blank');
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -713,6 +715,17 @@ function init() {
   // Render first tab
   renderTabContent(0);
 }
+
+// If ?chart=KEY is in the URL, render the detail page instead of the dashboard
+(function() {
+  const chartKey = new URLSearchParams(window.location.search).get('chart');
+  if (!chartKey) return;
+  let label = chartKey;
+  TABS.forEach(tab => tab.etfs.forEach(e => { if (e.key === chartKey) label = e.label; }));
+  document.open();
+  document.write(buildDetailHTML(chartKey, label));
+  document.close();
+})();
 
 document.addEventListener('DOMContentLoaded', init);
 </script>
