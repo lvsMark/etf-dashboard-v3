@@ -754,18 +754,21 @@ function init() {
   renderTabContent(0);
 }
 
-// If ?chart=KEY is in the URL, render the detail page instead of the dashboard
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
   const chartKey = new URLSearchParams(window.location.search).get('chart');
-  if (!chartKey) return;
-  let label = chartKey;
-  TABS.forEach(tab => tab.etfs.forEach(e => { if (e.key === chartKey) label = e.label; }));
-  document.open();
-  document.write(buildDetailHTML(chartKey, label));
-  document.close();
-})();
-
-document.addEventListener('DOMContentLoaded', init);
+  if (chartKey) {
+    // Detail mode: build page HTML, wrap in full-screen iframe so URL stays as ?chart=...
+    let label = chartKey;
+    TABS.forEach(tab => tab.etfs.forEach(e => { if (e.key === chartKey) label = e.label; }));
+    const html = buildDetailHTML(chartKey, label);
+    const blob = new Blob([html], {type: 'text/html'});
+    const blobUrl = URL.createObjectURL(blob);
+    document.body.style.cssText = 'margin:0;padding:0;overflow:hidden';
+    document.body.innerHTML = '<iframe src="' + blobUrl + '" style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;"></iframe>';
+  } else {
+    init();
+  }
+});
 </script>
 </body>
 </html>
