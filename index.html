@@ -554,8 +554,10 @@ function openDetail(key, label) {
 '.btn:hover{background:#ebf4ff;border-color:#4299e1;color:#2b6cb0}\n' +
 '.btn.atf{background:#0f3460;border-color:#0f3460;color:#fff}\n' +
 '.btn.asc{background:#2d6a4f;border-color:#2d6a4f;color:#fff}\n' +
-'.chart-box{position:relative;height:340px;margin-top:8px}\n' +
-'@media(max-width:640px){#hdr h1{font-size:15px}.chart-box{height:260px}.card{margin:8px;padding:10px}}\n' +
+'.chart-box{position:relative;height:240px;margin-top:4px}\n' +
+'.panel-label{font-size:10px;font-weight:700;color:#718096;letter-spacing:.5px;text-transform:uppercase;padding:10px 0 2px}\n' +
+'.panel-divider{height:1px;background:#e2e8f0;margin:6px 0 0}\n' +
+'@media(max-width:640px){#hdr h1{font-size:15px}.chart-box{height:190px}.card{margin:8px;padding:10px}}\n' +
 '</style>\n' +
 '</head>\n' +
 '<body>\n' +
@@ -575,8 +577,11 @@ function openDetail(key, label) {
 '<button class="btn asc" data-sc="Units">Units</button>\n' +
 '<button class="btn" data-sc="Rebase">Rebase</button>\n' +
 '</div></div>\n' +
-'<div class="card"><div class="card-title">Price</div><div class="chart-box"><canvas id="pxC"></canvas></div></div>\n' +
-'<div class="card"><div class="card-title">Holding Units &amp; Moving Averages (5-day, 10-day, 15-day)</div><div class="chart-box"><canvas id="hosC"></canvas></div></div>\n' +
+'<div class="card">\n' +
+'<div class="panel-label">Price</div><div class="chart-box"><canvas id="pxC"></canvas></div>\n' +
+'<div class="panel-divider"></div>\n' +
+'<div class="panel-label">Holdings &amp; Moving Averages &nbsp;(5d &middot; 10d &middot; 15d)</div><div class="chart-box"><canvas id="hosC"></canvas></div>\n' +
+'</div>\n' +
 '<script>\n' +
 'const D=' + safeData + ';\n' +
 'let tf="1W",sc="Units",pxCh,hosCh;\n' +
@@ -652,6 +657,21 @@ function openDetail(key, label) {
 '  render();\n' +
 '});\n' +
 'render();\n' +
+'// Crosshair sync between Price and Holdings panels\n' +
+'(function(){\n' +
+'  const elPx=document.getElementById("pxC"),elHos=document.getElementById("hosC");\n' +
+'  function sync(srcCh,tgtCh,e){\n' +
+'    const pts=srcCh.getElementsAtEventForMode(e,"index",{intersect:false});\n' +
+'    if(!pts.length)return;\n' +
+'    tgtCh.tooltip.setActiveElements(tgtCh.data.datasets.map((_,i)=>({datasetIndex:i,index:pts[0].index})),{x:0,y:0});\n' +
+'    tgtCh.update("none");\n' +
+'  }\n' +
+'  function clearTip(tgtCh){tgtCh.tooltip.setActiveElements([],{x:0,y:0});tgtCh.update("none");}\n' +
+'  elPx.addEventListener("mousemove",function(e){if(pxCh&&hosCh)sync(pxCh,hosCh,e);});\n' +
+'  elPx.addEventListener("mouseleave",function(){if(hosCh)clearTip(hosCh);});\n' +
+'  elHos.addEventListener("mousemove",function(e){if(hosCh&&pxCh)sync(hosCh,pxCh,e);});\n' +
+'  elHos.addEventListener("mouseleave",function(){if(pxCh)clearTip(pxCh);});\n' +
+'})();\n' +
 '<' + '/script>\n' +
 '</body></html>';
 
