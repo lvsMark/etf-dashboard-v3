@@ -705,24 +705,36 @@ function buildDetailHTML(key, label, tabData) {
 '  }\n' +
 '};\n' +
 'function render(){\n' +
+'  // 1. Compute raw filtered data\n' +
 '  const px=filterTF(D.px.dates,D.px.values,tf);\n' +
-'  const pxV=applyScale(px.values,sc);\n' +
-'  // Compute holdings MAs first — crossover signals appear on price chart\n' +
 '  const hos=filterTF(D.hos.dates,D.hos.values,tf);\n' +
-'  const hosV=applyScale(hos.values,sc);\n' +
-'  const ma5=calcMA(hosV,5),ma10=calcMA(hosV,10),ma15=calcMA(hosV,15);\n' +
-'  // Arrows on price chart: green ▲ when holdings crosses above MA15, red ▼ when below\n' +
-'  const buySig=px.dates.map(()=>null),sellSig=px.dates.map(()=>null);\n' +
-'  for(let i=1;i<hos.dates.length;i++){\n' +
-'    const ph=hosV[i-1],ch=hosV[i],pm=ma15[i-1],cm=ma15[i];\n' +
-'    if(ph==null||ch==null||pm==null||cm==null)continue;\n' +
-'    const pi=px.dates.indexOf(hos.dates[i]);\n' +
-'    if(pi<0||pxV[pi]==null)continue;\n' +
-'    if(ph<=pm&&ch>cm)buySig[pi]=pxV[pi]*0.97;\n' +
-'    if(ph>=pm&&ch<cm)sellSig[pi]=pxV[pi]*1.03;\n' +
+'  const pxRaw=applyScale(px.values,sc);\n' +
+'  const hosRaw=applyScale(hos.values,sc);\n' +
+'  // 2. MAs on dense HOS data, then crossovers\n' +
+'  const ma5r=calcMA(hosRaw,5),ma10r=calcMA(hosRaw,10),ma15r=calcMA(hosRaw,15);\n' +
+'  const crosses=calcCrossovers(hos.dates,hosRaw,ma15r);\n' +
+'  const upSet=new Set(crosses.ups),dnSet=new Set(crosses.downs);\n' +
+'  // 3. Build SHARED x-axis (union of both date arrays)\n' +
+'  const allDates=[...new Set([...px.dates,...hos.dates])].sort();\n' +
+'  // 4. Align every series to shared dates\n' +
+'  function align(dates,vals){\n' +
+'    const m={}; dates.forEach((d,i)=>{m[d]=vals[i];});\n' +
+'    return allDates.map(d=>m[d]!=null?m[d]:null);\n' +
 '  }\n' +
+'  const pxV=align(px.dates,pxRaw);\n' +
+'  const hosV=align(hos.dates,hosRaw);\n' +
+'  const ma5=align(hos.dates,ma5r);\n' +
+'  const ma10=align(hos.dates,ma10r);\n' +
+'  const ma15=align(hos.dates,ma15r);\n' +
+'  // 5. Arrow signals aligned to shared dates\n' +
+'  const buySig=allDates.map(()=>null),sellSig=allDates.map(()=>null);\n' +
+'  allDates.forEach((d,i)=>{\n' +
+'    if(upSet.has(d)&&pxV[i]!=null)buySig[i]=pxV[i]*0.97;\n' +
+'    if(dnSet.has(d)&&pxV[i]!=null)sellSig[i]=pxV[i]*1.03;\n' +
+'  });\n' +
+'  // 6. Price chart — shared labels, x-axis gridlines only (no labels)\n' +
 '  if(pxCh)pxCh.destroy();\n' +
-'  pxCh=new Chart(document.getElementById("pxC"),{type:"line",data:{labels:px.dates,datasets:[\n' +
+'  pxCh=new Chart(document.getElementById("pxC"),{type:"line",data:{labels:allDates,datasets:[\n' +
 '    {label:"Price",data:pxV,borderColor:"#2563eb",backgroundColor:"rgba(37,99,235,0.10)",fill:true,spanGaps:true,pointRadius:0,borderWidth:2,tension:0.2},\n' +
 '    {label:"▲ Buy",data:buySig,type:"line",showLine:false,spanGaps:false,\n' +
 '     pointStyle:"triangle",pointRotation:0,\n' +
@@ -735,11 +747,11 @@ function buildDetailHTML(key, label, tabData) {
 '     pointHoverRadius:function(c){return c.raw!=null?11:0;},\n' +
 '     pointBorderColor:"#dc2626",pointBackgroundColor:"#dc2626",borderColor:"transparent",backgroundColor:"transparent",fill:false},\n' +
 '  ]},options:opts(sc,true)});\n' +
-'  // HOS + MA\n' +
+'  // 7. Holdings chart — same shared labels\n' +
 '  const hosOpts=opts(sc,false);\n' +
 '  hosOpts.plugins.bgZones={zones:calcZones(hosV,ma15)};\n' +
 '  if(hosCh)hosCh.destroy();\n' +
-'  hosCh=new Chart(document.getElementById("hosC"),{type:"line",data:{labels:hos.dates,datasets:[\n' +
+'  hosCh=new Chart(document.getElementById("hosC"),{type:"line",data:{labels:allDates,datasets:[\n' +
 '    {label:"Holdings",data:hosV,borderColor:"#1d4ed8",backgroundColor:"rgba(29,78,216,0.07)",fill:true,spanGaps:true,pointRadius:0,borderWidth:2.5,tension:0.2},\n' +
 '    {label:"MA 5d", data:ma5, borderColor:"#0f172a",fill:false,spanGaps:true,pointRadius:0,borderWidth:2,borderDash:[5,3],tension:0.2},\n' +
 '    {label:"MA 10d",data:ma10,borderColor:"#3b82f6",fill:false,spanGaps:true,pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.2},\n' +
@@ -748,21 +760,6 @@ function buildDetailHTML(key, label, tabData) {
 '  // last update\n' +
 '  const ld=D.hos.dates.length?D.hos.dates[D.hos.dates.length-1]:"—";\n' +
 '  document.getElementById("lastUpdate").innerHTML="Data: <strong>"+ld+"</strong>";\n' +
-'  // Sync left edge of both chart areas to fix x-axis alignment\n' +
-'  requestAnimationFrame(function(){\n' +
-'    if(!pxCh||!hosCh)return;\n' +
-'    const dl=hosCh.chartArea.left-pxCh.chartArea.left;\n' +
-'    if(Math.abs(dl)<1)return;\n' +
-'    if(dl>0){\n' +
-'      pxCh.options.layout=pxCh.options.layout||{};\n' +
-'      pxCh.options.layout.padding=Object.assign(pxCh.options.layout.padding||{},{left:Math.round(dl)});\n' +
-'      pxCh.update("none");\n' +
-'    }else{\n' +
-'      hosCh.options.layout=hosCh.options.layout||{};\n' +
-'      hosCh.options.layout.padding=Object.assign(hosCh.options.layout.padding||{},{left:Math.round(-dl)});\n' +
-'      hosCh.update("none");\n' +
-'    }\n' +
-'  });\n' +
 '}\n' +
 'document.getElementById("ctrl").addEventListener("click",e=>{\n' +
 '  const b=e.target.closest("button");if(!b)return;\n' +
