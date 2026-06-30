@@ -648,6 +648,15 @@ function buildDetailHTML(key, label) {
 '  }\n' +
 '  return z;\n' +
 '}\n' +
+'function calcCrossovers(dates,vals,ref){\n' +
+'  const ups=[],downs=[];\n' +
+'  for(let i=1;i<vals.length;i++){\n' +
+'    if(vals[i]==null||ref[i]==null||vals[i-1]==null||ref[i-1]==null)continue;\n' +
+'    if(vals[i-1]<=ref[i-1]&&vals[i]>ref[i])ups.push(dates[i]);\n' +
+'    if(vals[i-1]>=ref[i-1]&&vals[i]<ref[i])downs.push(dates[i]);\n' +
+'  }\n' +
+'  return{ups,downs};\n' +
+'}\n' +
 'const bgZonePlugin={\n' +
 '  id:"bgZones",\n' +
 '  beforeDraw(chart){\n' +
@@ -675,15 +684,15 @@ function buildDetailHTML(key, label) {
 '  const hos=filterTF(D.hos.dates,D.hos.values,tf);\n' +
 '  const hosV=applyScale(hos.values,sc);\n' +
 '  const ma5=calcMA(hosV,5),ma10=calcMA(hosV,10),ma15=calcMA(hosV,15);\n' +
-'  // Detect 5MA/10MA crossovers (confirmed by 15MA) and map to price chart dates\n' +
+'  // Arrows on price chart: green ▲ when holdings crosses above MA15, red ▼ when below\n' +
 '  const buySig=px.dates.map(()=>null),sellSig=px.dates.map(()=>null);\n' +
 '  for(let i=1;i<hos.dates.length;i++){\n' +
-'    const p5=ma5[i-1],p10=ma10[i-1],c5=ma5[i],c10=ma10[i],c15=ma15[i];\n' +
-'    if(p5==null||p10==null||c5==null||c10==null||c15==null)continue;\n' +
+'    const ph=hosV[i-1],ch=hosV[i],pm=ma15[i-1],cm=ma15[i];\n' +
+'    if(ph==null||ch==null||pm==null||cm==null)continue;\n' +
 '    const pi=px.dates.indexOf(hos.dates[i]);\n' +
 '    if(pi<0||pxV[pi]==null)continue;\n' +
-'    if(p5<=p10&&c5>c10&&c5>c15)buySig[pi]=pxV[pi]*0.97;\n' +
-'    if(p5>=p10&&c5<c10&&c5<c15)sellSig[pi]=pxV[pi]*1.03;\n' +
+'    if(ph<=pm&&ch>cm)buySig[pi]=pxV[pi]*0.97;\n' +
+'    if(ph>=pm&&ch<cm)sellSig[pi]=pxV[pi]*1.03;\n' +
 '  }\n' +
 '  if(pxCh)pxCh.destroy();\n' +
 '  pxCh=new Chart(document.getElementById("pxC"),{type:"line",data:{labels:px.dates,datasets:[\n' +
