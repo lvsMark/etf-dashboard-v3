@@ -669,15 +669,37 @@ function buildDetailHTML(key, label) {
 '  }\n' +
 '};\n' +
 'function render(){\n' +
-'  // PX — hide x-axis (dates only shown in bottom panel)\n' +
 '  const px=filterTF(D.px.dates,D.px.values,tf);\n' +
 '  const pxV=applyScale(px.values,sc);\n' +
-'  if(pxCh)pxCh.destroy();\n' +
-'  pxCh=new Chart(document.getElementById("pxC"),{type:"line",data:{labels:px.dates,datasets:[{label:"Price",data:pxV,borderColor:"#2563eb",backgroundColor:"rgba(37,99,235,0.10)",fill:true,spanGaps:true,pointRadius:0,borderWidth:2,tension:0.2}]},options:opts(sc,true)});\n' +
-'  // HOS + MA\n' +
+'  // Compute holdings MAs first — crossover signals appear on price chart\n' +
 '  const hos=filterTF(D.hos.dates,D.hos.values,tf);\n' +
 '  const hosV=applyScale(hos.values,sc);\n' +
 '  const ma5=calcMA(hosV,5),ma10=calcMA(hosV,10),ma15=calcMA(hosV,15);\n' +
+'  // Detect 5MA/10MA crossovers (confirmed by 15MA) and map to price chart dates\n' +
+'  const buySig=px.dates.map(()=>null),sellSig=px.dates.map(()=>null);\n' +
+'  for(let i=1;i<hos.dates.length;i++){\n' +
+'    const p5=ma5[i-1],p10=ma10[i-1],c5=ma5[i],c10=ma10[i],c15=ma15[i];\n' +
+'    if(p5==null||p10==null||c5==null||c10==null||c15==null)continue;\n' +
+'    const pi=px.dates.indexOf(hos.dates[i]);\n' +
+'    if(pi<0||pxV[pi]==null)continue;\n' +
+'    if(p5<=p10&&c5>c10&&c5>c15)buySig[pi]=pxV[pi]*0.97;\n' +
+'    if(p5>=p10&&c5<c10&&c5<c15)sellSig[pi]=pxV[pi]*1.03;\n' +
+'  }\n' +
+'  if(pxCh)pxCh.destroy();\n' +
+'  pxCh=new Chart(document.getElementById("pxC"),{type:"line",data:{labels:px.dates,datasets:[\n' +
+'    {label:"Price",data:pxV,borderColor:"#2563eb",backgroundColor:"rgba(37,99,235,0.10)",fill:true,spanGaps:true,pointRadius:0,borderWidth:2,tension:0.2},\n' +
+'    {label:"▲ Buy",data:buySig,type:"line",showLine:false,spanGaps:false,\n' +
+'     pointStyle:"triangle",pointRotation:0,\n' +
+'     pointRadius:function(c){return c.raw!=null?9:0;},\n' +
+'     pointHoverRadius:function(c){return c.raw!=null?11:0;},\n' +
+'     pointBorderColor:"#16a34a",pointBackgroundColor:"#16a34a",borderColor:"transparent",backgroundColor:"transparent",fill:false},\n' +
+'    {label:"▼ Sell",data:sellSig,type:"line",showLine:false,spanGaps:false,\n' +
+'     pointStyle:"triangle",pointRotation:180,\n' +
+'     pointRadius:function(c){return c.raw!=null?9:0;},\n' +
+'     pointHoverRadius:function(c){return c.raw!=null?11:0;},\n' +
+'     pointBorderColor:"#dc2626",pointBackgroundColor:"#dc2626",borderColor:"transparent",backgroundColor:"transparent",fill:false},\n' +
+'  ]},options:opts(sc,true)});\n' +
+'  // HOS + MA\n' +
 '  const hosOpts=opts(sc,false);\n' +
 '  hosOpts.plugins.bgZones={zones:calcZones(hosV,ma15)};\n' +
 '  if(hosCh)hosCh.destroy();\n' +
