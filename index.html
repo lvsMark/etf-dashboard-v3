@@ -550,6 +550,8 @@ function buildDetailHTML(key, label) {
 '.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin:12px;padding:14px;flex-shrink:0}\n' +
 '.chart-card{flex:1;display:flex;flex-direction:column;overflow:hidden;margin-top:0;min-height:0}\n' +
 '.panel-section{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}\n' +
+'.panel-section.px{flex:3}\n' +
+'.panel-section.hos{flex:2}\n' +
 '.card-title{font-size:13px;font-weight:700;margin-bottom:12px;color:#1a1a2e}\n' +
 '.controls{display:flex;gap:5px;flex-wrap:wrap;align-items:center}\n' +
 '.sep{width:1px;background:#cbd5e0;align-self:stretch;margin:0 3px}\n' +
@@ -625,14 +627,15 @@ function buildDetailHTML(key, label) {
 '  if(v==null||isNaN(v))return"—";\n' +
 '  return v>=1e9?(v/1e9).toFixed(2)+"B":v>=1e6?(v/1e6).toFixed(2)+"M":v>=1e3?(v/1e3).toFixed(2)+"K":v.toFixed(2);\n' +
 '}\n' +
-'const xAx={ticks:{maxRotation:45,minRotation:0,autoSkip:true,maxTicksLimit:12,font:{size:10}},grid:{color:"rgba(0,0,0,0.04)"}};\n' +
-'function yAx(sc){return{ticks:{font:{size:10},callback:v=>sc==="Rebase"?v.toFixed(1):fmtN(v)},grid:{color:"rgba(0,0,0,0.06)"}};}\n' +
-'function opts(sc){\n' +
+'const xAx={ticks:{maxRotation:45,minRotation:0,autoSkip:true,maxTicksLimit:10,font:{size:10},color:"#94a3b8"},grid:{color:"rgba(0,0,0,0.05)"}};\n' +
+'const xAxHidden={display:false};\n' +
+'function yAx(sc){return{position:"right",ticks:{font:{size:10},color:"#64748b",callback:v=>sc==="Rebase"?v.toFixed(1):fmtN(v)},grid:{color:"rgba(0,0,0,0.05)"}};}\n' +
+'function opts(sc,hideX){\n' +
 '  return{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},\n' +
-'    plugins:{legend:{position:"top",labels:{font:{size:11},boxWidth:12,padding:10}},\n' +
-'      tooltip:{bodyFont:{size:11},titleFont:{size:11},callbacks:{label:c=>" "+c.dataset.label+": "+fmtN(c.parsed.y)}}},\n' +
+'    plugins:{legend:{position:"top",labels:{font:{size:11},boxWidth:10,padding:8,color:"#475569"}},\n' +
+'      tooltip:{backgroundColor:"rgba(15,20,40,0.85)",bodyFont:{size:11},titleFont:{size:11,weight:"bold"},callbacks:{label:c=>" "+c.dataset.label+": "+fmtN(c.parsed.y)}}},\n' +
 '    elements:{point:{radius:0,hoverRadius:4},line:{borderWidth:2,tension:0.2}},\n' +
-'    scales:{x:xAx,y:yAx(sc)}};\n' +
+'    scales:{x:hideX?xAxHidden:xAx,y:yAx(sc)}};\n' +
 '}\n' +
 '// Compute green/red background zones for Holdings panel\n' +
 'function calcZones(vals,ref){\n' +
@@ -666,23 +669,23 @@ function buildDetailHTML(key, label) {
 '  }\n' +
 '};\n' +
 'function render(){\n' +
-'  // PX\n' +
+'  // PX — hide x-axis (dates only shown in bottom panel)\n' +
 '  const px=filterTF(D.px.dates,D.px.values,tf);\n' +
 '  const pxV=applyScale(px.values,sc);\n' +
 '  if(pxCh)pxCh.destroy();\n' +
-'  pxCh=new Chart(document.getElementById("pxC"),{type:"line",data:{labels:px.dates,datasets:[{label:"Price",data:pxV,borderColor:"#2563eb",backgroundColor:"#2563eb18",fill:true,spanGaps:true,pointRadius:0,borderWidth:2,tension:0.2}]},options:opts(sc)});\n' +
+'  pxCh=new Chart(document.getElementById("pxC"),{type:"line",data:{labels:px.dates,datasets:[{label:"Price",data:pxV,borderColor:"#2563eb",backgroundColor:"rgba(37,99,235,0.10)",fill:true,spanGaps:true,pointRadius:0,borderWidth:2,tension:0.2}]},options:opts(sc,true)});\n' +
 '  // HOS + MA\n' +
 '  const hos=filterTF(D.hos.dates,D.hos.values,tf);\n' +
 '  const hosV=applyScale(hos.values,sc);\n' +
 '  const ma5=calcMA(hosV,5),ma10=calcMA(hosV,10),ma15=calcMA(hosV,15);\n' +
-'  const hosOpts=opts(sc);\n' +
+'  const hosOpts=opts(sc,false);\n' +
 '  hosOpts.plugins.bgZones={zones:calcZones(hosV,ma15)};\n' +
 '  if(hosCh)hosCh.destroy();\n' +
 '  hosCh=new Chart(document.getElementById("hosC"),{type:"line",data:{labels:hos.dates,datasets:[\n' +
-'    {label:"Holdings",data:hosV,borderColor:"#1d4ed8",backgroundColor:"rgba(29,78,216,0.08)",fill:true,spanGaps:true,pointRadius:0,borderWidth:2,tension:0.2},\n' +
-'    {label:"MA 5d", data:ma5, borderColor:"#dc2626",fill:false,spanGaps:true,pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.2},\n' +
-'    {label:"MA 10d",data:ma10,borderColor:"#2563eb",fill:false,spanGaps:true,pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.2},\n' +
-'    {label:"MA 15d",data:ma15,borderColor:"#d97706",fill:false,spanGaps:true,pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.2},\n' +
+'    {label:"Holdings",data:hosV,borderColor:"#1d4ed8",backgroundColor:"rgba(29,78,216,0.07)",fill:true,spanGaps:true,pointRadius:0,borderWidth:2.5,tension:0.2},\n' +
+'    {label:"MA 5d", data:ma5, borderColor:"#0f172a",fill:false,spanGaps:true,pointRadius:0,borderWidth:2,borderDash:[5,3],tension:0.2},\n' +
+'    {label:"MA 10d",data:ma10,borderColor:"#3b82f6",fill:false,spanGaps:true,pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.2},\n' +
+'    {label:"MA 15d",data:ma15,borderColor:"#f59e0b",fill:false,spanGaps:true,pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.2},\n' +
 '  ]},options:hosOpts,plugins:[bgZonePlugin]});\n' +
 '  // last update\n' +
 '  const ld=D.hos.dates.length?D.hos.dates[D.hos.dates.length-1]:"—";\n' +
