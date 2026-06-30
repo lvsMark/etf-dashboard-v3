@@ -527,10 +527,12 @@ function switchTab(idx) {
 }
 
 // ── DETAIL PAGE ───────────────────────────────────────────────────────────────
-function buildDetailHTML(key, label) {
+function buildDetailHTML(key, label, tabData) {
   const hosD = RAW.hos[key] || {dates:[], values:[]};
   const pxD  = RAW.px[key]  || {dates:[], values:[]};
   const safeData = JSON.stringify({hos: hosD, px: pxD}).replace(/<\/script>/gi, '<\\/script>');
+  const safeTab  = JSON.stringify(tabData ? tabData.etfs : []).replace(/<\/script>/gi, '<\\/script>');
+  const safeKey  = key.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 
   const pageHtml = '<!DOCTYPE html>\n' +
 '<html lang="en">\n' +
@@ -564,12 +566,17 @@ function buildDetailHTML(key, label) {
 '.panel-divider{height:2px;background:#d1d9e6;margin:0;flex-shrink:0}\n' +
 '.price-panel{flex:3}\n' +
 '.hos-panel{flex:2}\n' +
+'#hdr-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}\n' +
+'.back-btn{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.30);border-radius:5px;padding:4px 12px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;letter-spacing:.2px}\n' +
+'.back-btn:hover{background:rgba(255,255,255,0.28);border-color:rgba(255,255,255,0.6)}\n' +
+'#etf-pick{background:rgba(255,255,255,0.10);color:#e2e8f0;border:1px solid rgba(255,255,255,0.20);border-radius:4px;padding:3px 6px;font-size:11px;cursor:pointer;outline:none;max-width:220px}\n' +
+'#etf-pick option{color:#1a1a2e;background:#fff}\n' +
 '@media(max-width:640px){#hdr h1{font-size:15px}.card{margin:8px 8px 0;padding:10px}.chart-card{margin:8px}}\n' +
 '</style>\n' +
 '</head>\n' +
 '<body>\n' +
-'<div id="hdr"><div><h1>' + label + '</h1><div class="sub">ETF Detail View</div></div>' +
-'<div class="last" id="lastUpdate"></div></div>\n' +
+'<div id="hdr"><div><h1>' + label + '</h1><div class="sub"><select id="etf-pick"></select></div></div>' +
+'<div id="hdr-right"><button class="back-btn" id="back-btn">&#8592; Dashboard</button><div class="last" id="lastUpdate"></div></div></div>\n' +
 '<div class="card"><div class="controls" id="ctrl">\n' +
 '<button class="btn" data-tf="1W">1W</button>\n' +
 '<button class="btn" data-tf="1M">1M</button>\n' +
@@ -591,6 +598,23 @@ function buildDetailHTML(key, label) {
 '</div>\n' +
 '<script>\n' +
 'const D=' + safeData + ';\n' +
+'const TAB_ETFS=' + safeTab + ';\n' +
+'const CURRENT_KEY="' + safeKey + '";\n' +
+'function nav(url){if(window.parent!==window)window.parent.location.href=url;else window.location.href=url;}\n' +
+'function goBack(){const l=window.parent!==window?window.parent.location:window.location;nav(l.origin+l.pathname);}\n' +
+'function goEtf(k){nav("?chart="+encodeURIComponent(k));}\n' +
+'// Populate ticker dropdown\n' +
+'(function(){\n' +
+'  const sel=document.getElementById("etf-pick");\n' +
+'  TAB_ETFS.forEach(function(e){\n' +
+'    const o=document.createElement("option");\n' +
+'    o.value=e.key;o.textContent=e.label;\n' +
+'    if(e.key===CURRENT_KEY)o.selected=true;\n' +
+'    sel.appendChild(o);\n' +
+'  });\n' +
+'  sel.addEventListener("change",function(){goEtf(this.value);});\n' +
+'  document.getElementById("back-btn").addEventListener("click",goBack);\n' +
+'})();\n' +
 'let tf="YTD",sc="Rebase",pxCh,hosCh;\n' +
 'function filterTF(dates,vals,tf){\n' +
 '  if(!dates.length)return{dates:[],values:[]};\n' +
@@ -789,9 +813,9 @@ document.addEventListener('DOMContentLoaded', function() {
   const chartKey = new URLSearchParams(window.location.search).get('chart');
   if (chartKey) {
     // Detail mode: build page HTML, wrap in full-screen iframe so URL stays as ?chart=...
-    let label = chartKey;
-    TABS.forEach(tab => tab.etfs.forEach(e => { if (e.key === chartKey) label = e.label; }));
-    const html = buildDetailHTML(chartKey, label);
+    let label = chartKey, tabData = null;
+    TABS.forEach(tab => tab.etfs.forEach(e => { if (e.key === chartKey) { label = e.label; tabData = tab; } }));
+    const html = buildDetailHTML(chartKey, label, tabData);
     const blob = new Blob([html], {type: 'text/html'});
     const blobUrl = URL.createObjectURL(blob);
     document.body.style.cssText = 'margin:0;padding:0;overflow:hidden';
