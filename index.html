@@ -63,6 +63,8 @@
   .mini-card { background: #f7fafc; border-radius: 8px; padding: 10px; border: 1px solid #e2e8f0; }
   .mini-title { font-size: 12px; font-weight: 700; color: #2d3748; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
   .mini-chart-wrap { position: relative; height: 200px; }
+  .detail-btn { margin-left: auto; padding: 3px 9px; font-size: 10px; font-weight: 700; background: #0f3460; color: #fff; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .detail-btn:hover { background: #1a5a8a; }
 
   /* Mobile responsive */
   @media (max-width: 640px) {
@@ -473,7 +475,7 @@ function renderTabContent(tabIdx) {
       <div class="mini-grid">`;
   tab.etfs.forEach((e, i) => {
     html += `<div class="mini-card">
-        <div class="mini-title"><span class="etf-dot" style="background:${PALETTE[i%PALETTE.length]}"></span>${e.label}</div>
+        <div class="mini-title"><span class="etf-dot" style="background:${PALETTE[i%PALETTE.length]}"></span>${e.label}<button class="detail-btn" onclick="openDetail('${e.key}','${e.label}')">Detail ↗</button></div>
         <div class="mini-chart-wrap"><canvas id="mini-${tab.id}-${i}"></canvas></div>
       </div>`;
   });
@@ -522,6 +524,140 @@ function switchTab(idx) {
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===idx));
   document.querySelectorAll('.tab-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
   renderTabContent(idx);
+}
+
+// ── DETAIL PAGE ───────────────────────────────────────────────────────────────
+function openDetail(key, label) {
+  const hosD = RAW.hos[key] || {dates:[], values:[]};
+  const pxD  = RAW.px[key]  || {dates:[], values:[]};
+  const safeData = JSON.stringify({hos: hosD, px: pxD}).replace(/<\/script>/gi, '<\\/script>');
+
+  const pageHtml = '<!DOCTYPE html>\n' +
+'<html lang="en">\n' +
+'<head>\n' +
+'<meta charset="UTF-8">\n' +
+'<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+'<title>' + label + ' — ETF Detail</title>\n' +
+'<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><' + '/script>\n' +
+'<style>\n' +
+'*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}\n' +
+'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:13px}\n' +
+'#hdr{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}\n' +
+'#hdr h1{font-size:18px;font-weight:700}\n' +
+'#hdr .sub{font-size:11px;color:#a0aec0;margin-top:2px}\n' +
+'#hdr .last{font-size:11px;color:#a0d8ef;text-align:right}\n' +
+'.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin:12px;padding:14px}\n' +
+'.card-title{font-size:13px;font-weight:700;margin-bottom:12px;color:#1a1a2e}\n' +
+'.controls{display:flex;gap:5px;flex-wrap:wrap;align-items:center}\n' +
+'.sep{width:1px;background:#cbd5e0;align-self:stretch;margin:0 3px}\n' +
+'.btn{padding:4px 9px;border:1px solid #cbd5e0;border-radius:5px;cursor:pointer;background:#fff;font-size:11px;font-weight:600;color:#4a5568;transition:all .15s}\n' +
+'.btn:hover{background:#ebf4ff;border-color:#4299e1;color:#2b6cb0}\n' +
+'.btn.atf{background:#0f3460;border-color:#0f3460;color:#fff}\n' +
+'.btn.asc{background:#2d6a4f;border-color:#2d6a4f;color:#fff}\n' +
+'.chart-box{position:relative;height:340px;margin-top:8px}\n' +
+'@media(max-width:640px){#hdr h1{font-size:15px}.chart-box{height:260px}.card{margin:8px;padding:10px}}\n' +
+'</style>\n' +
+'</head>\n' +
+'<body>\n' +
+'<div id="hdr"><div><h1>' + label + '</h1><div class="sub">ETF Detail View</div></div>' +
+'<div class="last" id="lastUpdate"></div></div>\n' +
+'<div class="card"><div class="controls" id="ctrl">\n' +
+'<button class="btn atf" data-tf="1W">1W</button>\n' +
+'<button class="btn" data-tf="1M">1M</button>\n' +
+'<button class="btn" data-tf="3M">3M</button>\n' +
+'<button class="btn" data-tf="6M">6M</button>\n' +
+'<button class="btn" data-tf="YTD">YTD</button>\n' +
+'<button class="btn" data-tf="1Y">1Y</button>\n' +
+'<button class="btn" data-tf="3Y">3Y</button>\n' +
+'<button class="btn" data-tf="7Y">7Y</button>\n' +
+'<button class="btn" data-tf="MAX">MAX</button>\n' +
+'<div class="sep"></div>\n' +
+'<button class="btn asc" data-sc="Units">Units</button>\n' +
+'<button class="btn" data-sc="Rebase">Rebase</button>\n' +
+'</div></div>\n' +
+'<div class="card"><div class="card-title">Price</div><div class="chart-box"><canvas id="pxC"></canvas></div></div>\n' +
+'<div class="card"><div class="card-title">Holding Units &amp; Moving Averages (5-day, 10-day, 15-day)</div><div class="chart-box"><canvas id="hosC"></canvas></div></div>\n' +
+'<script>\n' +
+'const D=' + safeData + ';\n' +
+'let tf="1W",sc="Units",pxCh,hosCh;\n' +
+'function filterTF(dates,vals,tf){\n' +
+'  if(!dates.length)return{dates:[],values:[]};\n' +
+'  const ref=new Date(dates[dates.length-1]);let cut;\n' +
+'  switch(tf){\n' +
+'    case"1W":cut=new Date(ref);cut.setDate(ref.getDate()-7);break;\n' +
+'    case"1M":cut=new Date(ref);cut.setMonth(ref.getMonth()-1);break;\n' +
+'    case"3M":cut=new Date(ref);cut.setMonth(ref.getMonth()-3);break;\n' +
+'    case"6M":cut=new Date(ref);cut.setMonth(ref.getMonth()-6);break;\n' +
+'    case"YTD":cut=new Date(ref.getFullYear(),0,1);break;\n' +
+'    case"1Y":cut=new Date(ref);cut.setFullYear(ref.getFullYear()-1);break;\n' +
+'    case"3Y":cut=new Date(ref);cut.setFullYear(ref.getFullYear()-3);break;\n' +
+'    case"7Y":cut=new Date(ref);cut.setFullYear(ref.getFullYear()-7);break;\n' +
+'    default:return{dates,values:vals};\n' +
+'  }\n' +
+'  const i=dates.findIndex(d=>new Date(d)>=cut);\n' +
+'  return i<0?{dates:dates.slice(-1),values:vals.slice(-1)}:{dates:dates.slice(i),values:vals.slice(i)};\n' +
+'}\n' +
+'function rebase(vals){\n' +
+'  const base=vals.find(v=>v!=null&&!isNaN(v));\n' +
+'  if(!base||base===0)return vals;\n' +
+'  return vals.map(v=>v==null?null:parseFloat((v/base*100).toFixed(4)));\n' +
+'}\n' +
+'function applyScale(vals,sc){return sc==="Rebase"?rebase(vals):vals;}\n' +
+'function calcMA(vals,p){\n' +
+'  return vals.map((_,i)=>{\n' +
+'    if(i<p-1)return null;\n' +
+'    const sl=vals.slice(i-p+1,i+1).filter(x=>x!=null);\n' +
+'    if(sl.length<p)return null;\n' +
+'    return parseFloat((sl.reduce((a,b)=>a+b,0)/sl.length).toFixed(4));\n' +
+'  });\n' +
+'}\n' +
+'function fmtN(v){\n' +
+'  if(v==null||isNaN(v))return"—";\n' +
+'  return v>=1e9?(v/1e9).toFixed(2)+"B":v>=1e6?(v/1e6).toFixed(2)+"M":v>=1e3?(v/1e3).toFixed(2)+"K":v.toFixed(2);\n' +
+'}\n' +
+'const xAx={ticks:{maxRotation:45,minRotation:0,autoSkip:true,maxTicksLimit:12,font:{size:10}},grid:{color:"rgba(0,0,0,0.04)"}};\n' +
+'function yAx(sc){return{ticks:{font:{size:10},callback:v=>sc==="Rebase"?v.toFixed(1):fmtN(v)},grid:{color:"rgba(0,0,0,0.06)"}};}\n' +
+'function opts(sc){\n' +
+'  return{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},\n' +
+'    plugins:{legend:{position:"top",labels:{font:{size:11},boxWidth:12,padding:10}},\n' +
+'      tooltip:{bodyFont:{size:11},titleFont:{size:11},callbacks:{label:c=>" "+c.dataset.label+": "+fmtN(c.parsed.y)}}},\n' +
+'    elements:{point:{radius:0,hoverRadius:4},line:{borderWidth:2,tension:0.2}},\n' +
+'    scales:{x:xAx,y:yAx(sc)}};\n' +
+'}\n' +
+'function render(){\n' +
+'  // PX\n' +
+'  const px=filterTF(D.px.dates,D.px.values,tf);\n' +
+'  const pxV=applyScale(px.values,sc);\n' +
+'  if(pxCh)pxCh.destroy();\n' +
+'  pxCh=new Chart(document.getElementById("pxC"),{type:"line",data:{labels:px.dates,datasets:[{label:"Price",data:pxV,borderColor:"#2563eb",backgroundColor:"#2563eb18",fill:true,spanGaps:true,pointRadius:0,borderWidth:2,tension:0.2}]},options:opts(sc)});\n' +
+'  // HOS + MA\n' +
+'  const hos=filterTF(D.hos.dates,D.hos.values,tf);\n' +
+'  const hosV=applyScale(hos.values,sc);\n' +
+'  const ma5=calcMA(hosV,5),ma10=calcMA(hosV,10),ma15=calcMA(hosV,15);\n' +
+'  if(hosCh)hosCh.destroy();\n' +
+'  hosCh=new Chart(document.getElementById("hosC"),{type:"line",data:{labels:hos.dates,datasets:[\n' +
+'    {label:"Holdings",data:hosV,borderColor:"#2563eb",backgroundColor:"#2563eb12",fill:true,spanGaps:true,pointRadius:0,borderWidth:2,tension:0.2},\n' +
+'    {label:"MA 5d", data:ma5, borderColor:"#dc2626",fill:false,spanGaps:true,pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.2},\n' +
+'    {label:"MA 10d",data:ma10,borderColor:"#16a34a",fill:false,spanGaps:true,pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.2},\n' +
+'    {label:"MA 15d",data:ma15,borderColor:"#d97706",fill:false,spanGaps:true,pointRadius:0,borderWidth:1.5,borderDash:[5,3],tension:0.2},\n' +
+'  ]},options:opts(sc)});\n' +
+'  // last update\n' +
+'  const ld=D.hos.dates.length?D.hos.dates[D.hos.dates.length-1]:"—";\n' +
+'  document.getElementById("lastUpdate").innerHTML="Data: <strong>"+ld+"</strong>";\n' +
+'}\n' +
+'document.getElementById("ctrl").addEventListener("click",e=>{\n' +
+'  const b=e.target.closest("button");if(!b)return;\n' +
+'  if(b.dataset.tf){tf=b.dataset.tf;document.querySelectorAll("[data-tf]").forEach(x=>x.classList.toggle("atf",x===b));}\n' +
+'  if(b.dataset.sc){sc=b.dataset.sc;document.querySelectorAll("[data-sc]").forEach(x=>x.classList.toggle("asc",x===b));}\n' +
+'  render();\n' +
+'});\n' +
+'render();\n' +
+'<' + '/script>\n' +
+'</body></html>';
+
+  const blob = new Blob([pageHtml], {type:'text/html'});
+  const url = URL.createObjectURL(blob);
+  window.open(url, '_blank');
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
