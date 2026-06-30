@@ -655,7 +655,7 @@ function buildDetailHTML(key, label, tabData) {
 '  return v>=1e9?(v/1e9).toFixed(2)+"B":v>=1e6?(v/1e6).toFixed(2)+"M":v>=1e3?(v/1e3).toFixed(2)+"K":v.toFixed(2);\n' +
 '}\n' +
 'const xAx={ticks:{maxRotation:45,minRotation:0,autoSkip:true,maxTicksLimit:10,font:{size:10},color:"#94a3b8"},grid:{color:"rgba(0,0,0,0.05)"}};\n' +
-'const xAxHidden={display:false};\n' +
+'const xAxHidden={ticks:{display:false,maxRotation:45,minRotation:0,autoSkip:true,maxTicksLimit:10},grid:{color:"rgba(0,0,0,0.05)"}};\n' +
 'function yAx(sc){return{position:"right",ticks:{font:{size:10},color:"#64748b",callback:v=>sc==="Rebase"?v.toFixed(1):fmtN(v)},grid:{color:"rgba(0,0,0,0.05)"}};}\n' +
 'function opts(sc,hideX){\n' +
 '  return{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},\n' +
@@ -748,6 +748,21 @@ function buildDetailHTML(key, label, tabData) {
 '  // last update\n' +
 '  const ld=D.hos.dates.length?D.hos.dates[D.hos.dates.length-1]:"—";\n' +
 '  document.getElementById("lastUpdate").innerHTML="Data: <strong>"+ld+"</strong>";\n' +
+'  // Sync left edge of both chart areas to fix x-axis alignment\n' +
+'  requestAnimationFrame(function(){\n' +
+'    if(!pxCh||!hosCh)return;\n' +
+'    const dl=hosCh.chartArea.left-pxCh.chartArea.left;\n' +
+'    if(Math.abs(dl)<1)return;\n' +
+'    if(dl>0){\n' +
+'      pxCh.options.layout=pxCh.options.layout||{};\n' +
+'      pxCh.options.layout.padding=Object.assign(pxCh.options.layout.padding||{},{left:Math.round(dl)});\n' +
+'      pxCh.update("none");\n' +
+'    }else{\n' +
+'      hosCh.options.layout=hosCh.options.layout||{};\n' +
+'      hosCh.options.layout.padding=Object.assign(hosCh.options.layout.padding||{},{left:Math.round(-dl)});\n' +
+'      hosCh.update("none");\n' +
+'    }\n' +
+'  });\n' +
 '}\n' +
 'document.getElementById("ctrl").addEventListener("click",e=>{\n' +
 '  const b=e.target.closest("button");if(!b)return;\n' +
