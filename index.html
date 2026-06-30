@@ -602,7 +602,10 @@ function buildDetailHTML(key, label, tabData) {
 'const CURRENT_KEY="' + safeKey + '";\n' +
 'function nav(url){if(window.parent!==window)window.parent.location.href=url;else window.location.href=url;}\n' +
 'function goBack(){const l=window.parent!==window?window.parent.location:window.location;nav(l.origin+l.pathname);}\n' +
-'function goEtf(k){nav("?chart="+encodeURIComponent(k));}\n' +
+'function goEtf(k){\n' +
+'  if(window.parent!==window){window.parent.postMessage({type:"etf-nav",key:k},"*");}\n' +
+'  else{window.location.href="?chart="+encodeURIComponent(k);}\n' +
+'}\n' +
 '// Populate ticker dropdown\n' +
 '(function(){\n' +
 '  const sel=document.getElementById("etf-pick");\n' +
@@ -819,7 +822,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const blob = new Blob([html], {type: 'text/html'});
     const blobUrl = URL.createObjectURL(blob);
     document.body.style.cssText = 'margin:0;padding:0;overflow:hidden';
-    document.body.innerHTML = '<iframe src="' + blobUrl + '" style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;"></iframe>';
+    document.body.innerHTML = '<iframe src="' + blobUrl + '" id="detail-frame" style="position:fixed;top:0;left:0;width:100%;height:100%;border:none;"></iframe>';
+
+    // Handle ticker switches from the iframe via postMessage (avoids full page reload)
+    window.addEventListener('message', function(e) {
+      if (!e.data || e.data.type !== 'etf-nav') return;
+      const k = e.data.key;
+      let lbl = k, td = null;
+      TABS.forEach(function(tab) { tab.etfs.forEach(function(et) { if (et.key === k) { lbl = et.label; td = tab; } }); });
+      const newHtml = buildDetailHTML(k, lbl, td);
+      const newBlob = new Blob([newHtml], {type: 'text/html'});
+      document.getElementById('detail-frame').src = URL.createObjectURL(newBlob);
+      history.replaceState(null, '', '?chart=' + encodeURIComponent(k));
+    });
   } else {
     init();
   }
