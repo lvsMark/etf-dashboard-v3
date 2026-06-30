@@ -541,12 +541,15 @@ function openDetail(key, label) {
 '<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"><' + '/script>\n' +
 '<style>\n' +
 '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}\n' +
-'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:13px}\n' +
-'#hdr{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center}\n' +
+'html,body{height:100%;overflow:hidden}\n' +
+'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f0f2f5;color:#1a1a2e;font-size:13px;display:flex;flex-direction:column}\n' +
+'#hdr{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}\n' +
 '#hdr h1{font-size:18px;font-weight:700}\n' +
 '#hdr .sub{font-size:11px;color:#a0aec0;margin-top:2px}\n' +
 '#hdr .last{font-size:11px;color:#a0d8ef;text-align:right}\n' +
-'.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin:12px;padding:14px}\n' +
+'.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin:12px;padding:14px;flex-shrink:0}\n' +
+'.chart-card{flex:1;display:flex;flex-direction:column;overflow:hidden;margin-top:0;min-height:0}\n' +
+'.panel-section{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}\n' +
 '.card-title{font-size:13px;font-weight:700;margin-bottom:12px;color:#1a1a2e}\n' +
 '.controls{display:flex;gap:5px;flex-wrap:wrap;align-items:center}\n' +
 '.sep{width:1px;background:#cbd5e0;align-self:stretch;margin:0 3px}\n' +
@@ -554,10 +557,10 @@ function openDetail(key, label) {
 '.btn:hover{background:#ebf4ff;border-color:#4299e1;color:#2b6cb0}\n' +
 '.btn.atf{background:#0f3460;border-color:#0f3460;color:#fff}\n' +
 '.btn.asc{background:#2d6a4f;border-color:#2d6a4f;color:#fff}\n' +
-'.chart-box{position:relative;height:240px;margin-top:4px}\n' +
-'.panel-label{font-size:10px;font-weight:700;color:#718096;letter-spacing:.5px;text-transform:uppercase;padding:10px 0 2px}\n' +
-'.panel-divider{height:1px;background:#e2e8f0;margin:6px 0 0}\n' +
-'@media(max-width:640px){#hdr h1{font-size:15px}.chart-box{height:190px}.card{margin:8px;padding:10px}}\n' +
+'.chart-box{position:relative;flex:1;height:0;margin-top:4px}\n' +
+'.panel-label{font-size:10px;font-weight:700;color:#718096;letter-spacing:.5px;text-transform:uppercase;padding:8px 0 2px;flex-shrink:0}\n' +
+'.panel-divider{height:1px;background:#e2e8f0;margin:0;flex-shrink:0}\n' +
+'@media(max-width:640px){#hdr h1{font-size:15px}.card{margin:8px 8px 0;padding:10px}.chart-card{margin:8px}}\n' +
 '</style>\n' +
 '</head>\n' +
 '<body>\n' +
@@ -577,10 +580,10 @@ function openDetail(key, label) {
 '<button class="btn asc" data-sc="Units">Units</button>\n' +
 '<button class="btn" data-sc="Rebase">Rebase</button>\n' +
 '</div></div>\n' +
-'<div class="card">\n' +
-'<div class="panel-label">Price</div><div class="chart-box"><canvas id="pxC"></canvas></div>\n' +
+'<div class="card chart-card">\n' +
+'<div class="panel-section"><div class="panel-label">Price</div><div class="chart-box"><canvas id="pxC"></canvas></div></div>\n' +
 '<div class="panel-divider"></div>\n' +
-'<div class="panel-label">Holdings &amp; Moving Averages &nbsp;(5d &middot; 10d &middot; 15d)</div><div class="chart-box"><canvas id="hosC"></canvas></div>\n' +
+'<div class="panel-section"><div class="panel-label">Holdings &amp; Moving Averages &nbsp;(5d &middot; 10d &middot; 15d)</div><div class="chart-box"><canvas id="hosC"></canvas></div></div>\n' +
 '</div>\n' +
 '<script>\n' +
 'const D=' + safeData + ';\n' +
