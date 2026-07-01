@@ -722,12 +722,14 @@ function buildDetailHTML(key, label, tabData) {
 '    const{ctx,chartArea:ca}=chart;\n' +
 '    const n=chart.data.labels.length;\n' +
 '    if(!ca||!n)return;\n' +
+'    const xScale=chart.scales.x;\n' +
+'    if(!xScale)return;\n' +
+'    const step=n>1?xScale.getPixelForValue(1)-xScale.getPixelForValue(0):0;\n' +
 '    ctx.save();\n' +
 '    ctx.beginPath();ctx.rect(ca.left,ca.top,ca.width,ca.height);ctx.clip();\n' +
-'    const step=n>1?ca.width/(n-1):ca.width;\n' +
 '    p.zones.forEach(z=>{\n' +
-'      const x0=ca.left+z.s*step;\n' +
-'      const x1=ca.left+Math.min(z.e,n-1)*step+step;\n' +
+'      const x0=xScale.getPixelForValue(z.s);\n' +
+'      const x1=xScale.getPixelForValue(Math.min(z.e,n-1))+step;\n' +
 '      ctx.fillStyle=z.bull?"rgba(52,199,89,0.20)":"rgba(239,68,68,0.15)";\n' +
 '      ctx.fillRect(x0,ca.top,x1-x0,ca.height);\n' +
 '    });\n' +
