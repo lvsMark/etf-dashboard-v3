@@ -666,7 +666,7 @@ function buildDetailHTML(key, label, tabData) {
 '  return v>=1e9?(v/1e9).toFixed(2)+"B":v>=1e6?(v/1e6).toFixed(2)+"M":v>=1e3?(v/1e3).toFixed(2)+"K":v.toFixed(2);\n' +
 '}\n' +
 'const xAx={ticks:{maxRotation:45,minRotation:0,autoSkip:true,maxTicksLimit:10,font:{size:10},color:"#94a3b8"},grid:{color:"rgba(0,0,0,0.05)"}};\n' +
-'const xAxHidden={ticks:{display:false,maxRotation:45,minRotation:0,autoSkip:true,maxTicksLimit:10},grid:{color:"rgba(0,0,0,0.05)"}};\n' +
+'const xAxHidden={ticks:{maxRotation:45,minRotation:0,autoSkip:true,maxTicksLimit:10,font:{size:10},color:"rgba(0,0,0,0)"},grid:{color:"rgba(0,0,0,0.05)"}};\n' +
 'function yAx(sc){return{position:"right",ticks:{font:{size:10},color:"#64748b",callback:v=>sc==="Rebase"?v.toFixed(1):fmtN(v)},grid:{color:"rgba(0,0,0,0.05)"}};}\n' +
 'function opts(sc,hideX,zoomEn){\n' +
 '  const o={responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},\n' +
@@ -796,9 +796,9 @@ function buildDetailHTML(key, label, tabData) {
 '  // last update\n' +
 '  const ld=D.hos.dates.length?D.hos.dates[D.hos.dates.length-1]:"—";\n' +
 '  document.getElementById("lastUpdate").innerHTML="Data: <strong>"+ld+"</strong>";\n' +
-'  // Align chart areas — two-pass:\n' +
-'  // Pass 1: lock both y-axes to same width (fixes right edge)\n' +
-'  // Pass 2: add left padding to whichever chart has a smaller left boundary (fixes left edge)\n' +
+'  // Align right edge: lock both y-axes to same width so chartArea.right matches.\n' +
+'  // Left edge is naturally aligned because xAxHidden now keeps ticks in layout\n' +
+'  // (transparent color) matching the overflow padding of the holdings chart.\n' +
 '  requestAnimationFrame(function(){\n' +
 '    if(!pxCh||!hosCh)return;\n' +
 '    const yW=Math.max(pxCh.scales.y.width,hosCh.scales.y.width);\n' +
@@ -807,20 +807,6 @@ function buildDetailHTML(key, label, tabData) {
 '    hosCh.options.scales.y.afterFit=fixY;\n' +
 '    pxCh.update("none");\n' +
 '    hosCh.update("none");\n' +
-'    requestAnimationFrame(function(){\n' +
-'      if(!pxCh||!hosCh)return;\n' +
-'      const dl=hosCh.chartArea.left-pxCh.chartArea.left;\n' +
-'      if(Math.abs(dl)<1)return;\n' +
-'      if(dl>0){\n' +
-'        pxCh.options.layout=pxCh.options.layout||{};\n' +
-'        pxCh.options.layout.padding=Object.assign(pxCh.options.layout.padding||{},{left:Math.round(dl)});\n' +
-'      }else{\n' +
-'        hosCh.options.layout=hosCh.options.layout||{};\n' +
-'        hosCh.options.layout.padding=Object.assign(hosCh.options.layout.padding||{},{left:Math.round(-dl)});\n' +
-'      }\n' +
-'      pxCh.update("none");\n' +
-'      hosCh.update("none");\n' +
-'    });\n' +
 '  });\n' +
 '}\n' +
 'document.getElementById("ctrl").addEventListener("click",e=>{\n' +
