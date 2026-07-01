@@ -796,7 +796,9 @@ function buildDetailHTML(key, label, tabData) {
 '  // last update\n' +
 '  const ld=D.hos.dates.length?D.hos.dates[D.hos.dates.length-1]:"—";\n' +
 '  document.getElementById("lastUpdate").innerHTML="Data: <strong>"+ld+"</strong>";\n' +
-'  // Align chart areas: force both y-axes to the same width so x-axes are identical\n' +
+'  // Align chart areas — two-pass:\n' +
+'  // Pass 1: lock both y-axes to same width (fixes right edge)\n' +
+'  // Pass 2: add left padding to whichever chart has a smaller left boundary (fixes left edge)\n' +
 '  requestAnimationFrame(function(){\n' +
 '    if(!pxCh||!hosCh)return;\n' +
 '    const yW=Math.max(pxCh.scales.y.width,hosCh.scales.y.width);\n' +
@@ -805,6 +807,20 @@ function buildDetailHTML(key, label, tabData) {
 '    hosCh.options.scales.y.afterFit=fixY;\n' +
 '    pxCh.update("none");\n' +
 '    hosCh.update("none");\n' +
+'    requestAnimationFrame(function(){\n' +
+'      if(!pxCh||!hosCh)return;\n' +
+'      const dl=hosCh.chartArea.left-pxCh.chartArea.left;\n' +
+'      if(Math.abs(dl)<1)return;\n' +
+'      if(dl>0){\n' +
+'        pxCh.options.layout=pxCh.options.layout||{};\n' +
+'        pxCh.options.layout.padding=Object.assign(pxCh.options.layout.padding||{},{left:Math.round(dl)});\n' +
+'      }else{\n' +
+'        hosCh.options.layout=hosCh.options.layout||{};\n' +
+'        hosCh.options.layout.padding=Object.assign(hosCh.options.layout.padding||{},{left:Math.round(-dl)});\n' +
+'      }\n' +
+'      pxCh.update("none");\n' +
+'      hosCh.update("none");\n' +
+'    });\n' +
 '  });\n' +
 '}\n' +
 'document.getElementById("ctrl").addEventListener("click",e=>{\n' +
