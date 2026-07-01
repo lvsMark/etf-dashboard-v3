@@ -796,6 +796,21 @@ function buildDetailHTML(key, label, tabData) {
 '  // last update\n' +
 '  const ld=D.hos.dates.length?D.hos.dates[D.hos.dates.length-1]:"—";\n' +
 '  document.getElementById("lastUpdate").innerHTML="Data: <strong>"+ld+"</strong>";\n' +
+'  // Align chart areas: equalize left and right edges so x-axes match\n' +
+'  requestAnimationFrame(function(){\n' +
+'    if(!pxCh||!hosCh)return;\n' +
+'    const pa=pxCh.chartArea,ha=hosCh.chartArea;\n' +
+'    const pl={left:0,right:0},hl={left:0,right:0};\n' +
+'    // Left edge: push whichever chart starts later\n' +
+'    if(ha.left>pa.left) pl.left=Math.round(ha.left-pa.left);\n' +
+'    else hl.left=Math.round(pa.left-ha.left);\n' +
+'    // Right edge: push whichever chart ends sooner\n' +
+'    const prRight=pxCh.width-pa.right, hrRight=hosCh.width-ha.right;\n' +
+'    if(hrRight>prRight) pl.right=Math.round(hrRight-prRight);\n' +
+'    else hl.right=Math.round(prRight-hrRight);\n' +
+'    if(pl.left||pl.right){pxCh.options.layout=pxCh.options.layout||{};pxCh.options.layout.padding=pl;pxCh.update("none");}\n' +
+'    if(hl.left||hl.right){hosCh.options.layout=hosCh.options.layout||{};hosCh.options.layout.padding=hl;hosCh.update("none");}\n' +
+'  });\n' +
 '}\n' +
 'document.getElementById("ctrl").addEventListener("click",e=>{\n' +
 '  const b=e.target.closest("button");if(!b)return;\n' +
