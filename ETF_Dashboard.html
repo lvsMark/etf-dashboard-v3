@@ -224,7 +224,7 @@ function makeXAxis() {
 
 function makeYAxis(label) {
   return {
-    ticks: { font: {size: 10}, callback: v => v >= 1e9 ? (v/1e9).toFixed(1)+'B' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(1)+'K' : v },
+    ticks: { font: {size: 10}, callback: v => v >= 1e9 ? (v/1e9).toFixed(1)+'B' : v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(1)+'K' : parseFloat(v.toFixed(2)) },
     grid: { color: 'rgba(0,0,0,0.06)' },
     title: label ? {display: true, text: label, font:{size:10}} : undefined
   };
@@ -324,7 +324,7 @@ function renderMiniChart(canvasId, etf, color) {
     },
     scales: {
       x: { ticks:{maxRotation:45,minRotation:0,autoSkip:true,maxTicksLimit:8,font:{size:9}}, grid:{color:'rgba(0,0,0,0.04)'} },
-      y: { ticks:{font:{size:9},callback:v=>v>=1e9?(v/1e9).toFixed(1)+'B':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(1)+'K':v}, grid:{color:'rgba(0,0,0,0.06)'} }
+      y: { ticks:{font:{size:9},callback:v=>v>=1e9?(v/1e9).toFixed(1)+'B':v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(1)+'K':parseFloat(v.toFixed(2))}, grid:{color:'rgba(0,0,0,0.06)'} }
     },
     elements: { point:{radius:0,hoverRadius:3}, line:{borderWidth:1.5,tension:0.2} }
   };
