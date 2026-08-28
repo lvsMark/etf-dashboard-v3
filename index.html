@@ -568,6 +568,9 @@ function buildDetailHTML(key, label, tabData) {
 '.reset-zoom-btn.vis{display:inline-block}\n' +
 '.zoom-hint{display:none;font-size:9px;color:#94a3b8;font-style:italic;padding:0 0 2px;flex-shrink:0;text-align:right}\n' +
 '.zoom-hint.vis{display:block}\n' +
+'.zoom-btns{display:none;gap:4px;align-items:center}\n' +
+'.zoom-btns.vis{display:flex}\n' +
+'.zoom-btns .btn{padding:2px 8px;font-size:10px}\n' +
 '.panel-divider{height:2px;background:#d1d9e6;margin:0;flex-shrink:0}\n' +
 '.price-panel{flex:3}\n' +
 '.hos-panel{flex:2}\n' +
@@ -598,8 +601,8 @@ function buildDetailHTML(key, label, tabData) {
 '</div></div>\n' +
 '<div class="card chart-card">\n' +
 '<div class="panel-section price-panel">\n' +
-'  <div class="panel-label-row"><div class="panel-label">Price</div><button class="reset-zoom-btn" id="resetZoomBtn" onclick="resetZoom()">&#x21BA; Reset Zoom</button></div>\n' +
-'  <div class="zoom-hint" id="zoomHint">Scroll to zoom &bull; Drag to pan</div>\n' +
+'  <div class="panel-label-row"><div class="panel-label">Price</div><div class="zoom-btns" id="zoomBtns"><button class="btn" onclick="zoomBy(1.35)">Zoom in +</button><button class="btn" onclick="zoomBy(0.74)">Zoom out &minus;</button><button class="reset-zoom-btn" id="resetZoomBtn" onclick="resetZoom()">&#x21BA; Reset Zoom</button></div></div>\n' +
+'  <div class="zoom-hint" id="zoomHint">Scroll/pinch to zoom &bull; Drag to pan &mdash; both charts move together</div>\n' +
 '  <div class="chart-box"><canvas id="pxC"></canvas></div>\n' +
 '</div>\n' +
 '<div class="panel-divider"></div>\n' +
@@ -692,6 +695,9 @@ function buildDetailHTML(key, label, tabData) {
 '  if(hosCh)hosCh.resetZoom();\n' +
 '  document.getElementById("resetZoomBtn").classList.remove("vis");\n' +
 '}\n' +
+'function zoomBy(factor){\n' +
+'  if(pxCh)pxCh.zoom(factor);\n' +
+'}\n' +
 '// Compute green/red background zones for Holdings panel\n' +
 'function calcZones(vals,ref){\n' +
 '  const z=[];let cur=null;\n' +
@@ -764,8 +770,9 @@ function buildDetailHTML(key, label, tabData) {
 '    if(dnSet.has(d)&&pxV[i]!=null)sellSig[i]=pxV[i]*1.03;\n' +
 '  });\n' +
 '  // 6. Zoom enabled for long timeframes\n' +
-'  const zoomEn=(tf==="3Y"||tf==="7Y"||tf==="MAX");\n' +
+'  const zoomEn=(tf==="1Y"||tf==="3Y"||tf==="7Y"||tf==="MAX");\n' +
 '  document.getElementById("zoomHint").classList.toggle("vis",zoomEn);\n' +
+'  document.getElementById("zoomBtns").classList.toggle("vis",zoomEn);\n' +
 '  document.getElementById("resetZoomBtn").classList.remove("vis");\n' +
 '  // Price chart — shared labels, x-axis gridlines only (no labels)\n' +
 '  if(pxCh)pxCh.destroy();\n' +
